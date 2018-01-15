@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 # img = cv2.imread('szwajcaria.jpg',cv2.IMREAD_COLOR)
 
 # px = img[640, 320, 2]
@@ -11,23 +10,29 @@ import matplotlib.pyplot as plt
 # cv2.waitKey(0)
 # cv2.destroyAllWindows()
 
-
 cap = cv2.VideoCapture('VID_20180102_140825.mp4')
 values1 = []
 
-
-for x in range(0, 300):
+for a in range(0, 87):
     ret, frame = cap.read()
 
     img = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    if ret == True:
-        px = 0
-        for y in range(300, 330):
-            px1 = img[640, y, 2]
-            px += px1
-    print(px)
 
-    values1.append(px)
+    if ret == True:
+        RedPixelsVerticalMeansSum = 0
+        for x in range(0,719):
+            VerticalRedPixelSum = 0
+            for y in range(0,1279):           
+                RedPixelValue = img[x, y, 0]
+                VerticalRedPixelSum += RedPixelValue    
+
+            VerticalRedPixelMean = VerticalRedPixelSum/1280
+            RedPixelsVerticalMeansSum += VerticalRedPixelMean
+
+        RedPixelsMean = RedPixelsVerticalMeansSum/720
+        print(RedPixelsMean)
+
+        values1.append(RedPixelsMean)
 
 plt.plot(values1, "r-", label=str(values1[-1]))   
 plt.grid(True)
