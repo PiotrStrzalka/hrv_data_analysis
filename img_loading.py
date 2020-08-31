@@ -1,42 +1,96 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.signal import butter, lfilter
+from scipy.interpolate import CubicSpline
 
-# img = cv2.imread('szwajcaria.jpg',cv2.IMREAD_COLOR)
 
-# px = img[640, 320, 2]
-# print(px)
+def butter_bandpass_filter(data, lowcut, highcut, fs, order =4):
+    nyq = 0.5 * fs #fs- sampling frequency
+    low = lowcut / nyq
+    high = highcut / nyq
 
-# cv2.waitKey(0)
-# cv2.destroyAllWindows()
+    b, a = butter(order, [low,high], btype='band')
+    y = lfilter(b, a, data)
+    return y
 
-cap = cv2.VideoCapture('VID_20180102_140825.mp4')
-values1 = []
+H_values = []
+InputFile = open('HsvValuesVideo4.txt','r')
 
-for a in range(0, 87):
-    ret, frame = cap.read()
+for line in InputFile.readlines():
+    H_values.append(-(float(line)))
 
-    img = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+# for each in InputFile:
+#     H_values.append(float(InputFile.read()))
 
-    if ret == True:
-        RedPixelsVerticalMeansSum = 0
-        for x in range(0,719):
-            VerticalRedPixelSum = 0
-            for y in range(0,1279):           
-                RedPixelValue = img[x, y, 0]
-                VerticalRedPixelSum += RedPixelValue    
 
-            VerticalRedPixelMean = VerticalRedPixelSum/1280
-            RedPixelsVerticalMeansSum += VerticalRedPixelMean
+InputFile.close()
 
-        RedPixelsMean = RedPixelsVerticalMeansSum/720
-        print(RedPixelsMean)
+print(H_values[0])
+print(H_values[1])
+values_after_butter = butter_bandpass_filter(H_values, 0.33, 4, 29)
 
-        values1.append(RedPixelsMean)
+print(len(values_after_butter))
 
-plt.plot(values1, "r-", label=str(values1[-1]))   
+x_temporary_values = np.arange(1840)
+# xs = []
+# xs.arange(1000,18410)
+xs= np.arange(1000, 18410, 1)
+interpolation_forumla = CubicSpline(x_temporary_values,values_after_butter)
+
+
+output = []
+for a in range(1000, 18410):
+    output.append(interpolation_forumla(a/10))
+
+peaksX = []
+for a in range(25, 17384):       # 1 step is a 1/290sec = 3,5ms
+    if (output[a-1] < output[a]) and (output[a-25] < (output[a]-0.15)):
+        if (output[a] > output[a+1]) and (output[a]-0.15 > output[a+25]):
+            peaksX.append(a)
+
+intervalsArray = []
+for c in range(1,len(peaksX)):
+    intervalsArray.append(peaksX[c]-peaksX[c-1])
+
+print(peaksX)
+
+mean = np.mean(intervalsArray)
+print('mean1= ' + str(mean))
+
+median = np.median(intervalsArray)
+print('median = ' + str(median))
+
+peaksToRemove = []
+
+print('Length of peaksX = ' + str(len(peaksX)))
+
+# for c in range(1 , 5):
+#     if (peaksX[c]-peaksX[c-1]) < (0.8 * median):
+#         peaksX.remove(peaksX[c])
+#         # c = c - 1
+
+# plt.subplot(3,1,1)
+# plt.plot(H_values, "r-", label=str(H_values[-1]))   
+# plt.grid(True)
+# plt.ylabel('H from HSV value') 
+
+# plt.subplot(3, 1, 2)
+# plt.plot(values_after_butter, "r-", label=str(H_values[-1]))   
+# plt.grid(True)
+# plt.ylabel('After 4-score butterworth filter') 
+
+plt.subplot(1, 1, 1)
+plt.plot(output, "r-", label="Interpolation")   
 plt.grid(True)
-plt.title('Wartość R piksela 640x320') 
+plt.ylabel('After cubic spline interpolation') 
+
+x = len(peaksX)
+for b in range(1, len(peaksX)):
+    annotation = (str(round((peaksX[b] - peaksX[b-1])*3.6,1)) + 'ms')
+    plt.annotate(annotation,xy=(peaksX[b],output[peaksX[b]]), xytext=(peaksX[b]-170, output[peaksX[b]]+0.1), arrowprops=dict(facecolor='black',shrink=0.01))
+    # print(str(peaksX[b]))
+
 plt.show()
 
 #     if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -45,7 +99,6 @@ cap.release()
 input("press key to continue")
 
 cv2.destroyAllWindows()
-
 
 
 
