@@ -8,7 +8,9 @@ python -m venv .venv
 **Activare virtual env:**
 ```
 Windows:        .venv\Scripts\activate.bat
-Linux MacOS:    source tutorial-env/bin/activate
+(to create an alias: doskey va=.venv\Scripts\activate.bat)
+
+Linux MacOS:    source .venv/Scripts/activate
 ```
 
 **Deactivate virtual env:**
